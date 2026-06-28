@@ -75,16 +75,4 @@ npm run report:html
 Screenshots are captured automatically on failure (`cypress/screenshots/`) and
 video of each run is saved to `cypress/videos/`.
 
-## Notes on Current Build (WFP-1.4.0-rc2)
 
-Several specs assert the *correct* expected business rules and therefore fail on
-the current build, evidencing logged defects:
-
-| Spec / Test | Maps to | Status | Defect |
-|---|---|---|---|
-| duplicate-email - case-only | TC-EMP-014 | Fail | DEF-001 |
-| complete training -> Pending Approval | TC-OJT-012 | Fail | DEF-002 |
-| supervisor approves pending training | TC-OJT-020 | Fail | DEF-002 |
-| cert expiring in exactly 30 days | TC-CERT-011 | Fail | DEF-004 |
-
-See `WorkForcePro_Cypress_Execution_Report.pdf` for full results.
