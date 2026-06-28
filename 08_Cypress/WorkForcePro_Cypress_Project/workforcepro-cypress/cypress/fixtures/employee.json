@@ -1,0 +1,14 @@
+{
+  "valid": {
+    "employeeId": "EMP-1001",
+    "name": "Ravi Sharma",
+    "email": "ravi.sharma@workforcepro.com",
+    "department": "Operations",
+    "supervisor": "Anita Rao"
+  },
+  "existing": {
+    "name": "Existing User",
+    "email": "ravi.sharma@workforcepro.com",
+    "department": "Operations"
+  }
+}

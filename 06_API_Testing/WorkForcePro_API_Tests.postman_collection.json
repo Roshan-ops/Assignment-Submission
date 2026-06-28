@@ -1,0 +1,603 @@
+{
+  "info": {
+    "name": "WorkForcePro API Tests",
+    "_postman_id": "wfp-api-tests-0001",
+    "description": "API tests for WorkForcePro. 5 positive + 5 negative requests, each with validation scripts for status codes, response structure, required fields and business rules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Positive Scenarios",
+      "item": [
+        {
+          "name": "1. Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Create a new employee (EMP-001).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{newEmployeeCode}}\",\n  \"name\": \"Ravi Sharma\",\n  \"email\": \"{{newEmail}}\",\n  \"departmentId\": 10,\n  \"supervisorId\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// make the data unique so this passes on every run",
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('newEmail', `ravi.sharma+${ts}@workforcepro.com`);",
+                  "pm.collectionVariables.set('newEmployeeCode', `EMP-${ts}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Has the required fields', () => {",
+                  "  ['id','employeeId','name','email','departmentId'].forEach(f => pm.expect(j).to.have.property(f));",
+                  "});",
+                  "pm.test('Email matches what we sent', () => pm.expect(j.email).to.eql(pm.collectionVariables.get('newEmail')));",
+                  "if (j && j.id) pm.collectionVariables.set('createdEmployeeId', j.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Retrieve Employee",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{createdEmployeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "{{createdEmployeeId}}"
+              ]
+            },
+            "description": "Retrieve the employee created in step 1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Returns the same employee', () => pm.expect(String(j.id)).to.eql(pm.collectionVariables.get('createdEmployeeId')));",
+                  "pm.test('Has the required fields', () => {",
+                  "  ['id','employeeId','name','email','departmentId'].forEach(f => pm.expect(j).to.have.property(f));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Assign Training",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{supervisorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "assign"
+              ]
+            },
+            "description": "Supervisor assigns a training module with a due date (OJT-001).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{createdEmployeeId}}\",\n  \"trainingModuleId\": 200,\n  \"dueDate\": \"2026-07-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Has the required fields', () => {",
+                  "  ['assignmentId','employeeId','trainingModuleId','status'].forEach(f => pm.expect(j).to.have.property(f));",
+                  "});",
+                  "pm.test('New assignment status is \"Assigned\"', () => pm.expect(j.status).to.eql('Assigned'));",
+                  "if (j && j.assignmentId) pm.collectionVariables.set('assignmentId', j.assignmentId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Complete Training",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "complete"
+              ]
+            },
+            "description": "Employee marks the training complete. It should go to 'Pending Approval', not 'Completed' (OJT-003).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{assignmentId}}\",\n  \"completionDate\": \"2026-06-23\",\n  \"employeeNotes\": \"Completed all required floor hours.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Completion date is recorded', () => pm.expect(j).to.have.property('completionDate'));",
+                  "// Business rule (OJT-003): completion must wait for supervisor approval.",
+                  "pm.test('Status is \"Pending Approval\"', () => pm.expect(j.status).to.eql('Pending Approval'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Approve Training",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{supervisorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "approve"
+              ]
+            },
+            "description": "Supervisor approves the completed training (OJT-003).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{assignmentId}}\",\n  \"approverId\": 500,\n  \"decision\": \"Approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Status becomes \"Completed\"', () => pm.expect(j.status).to.eql('Completed'));",
+                  "pm.test('Approver is recorded', () => pm.expect(j).to.have.property('approvedBy'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Negative Scenarios",
+      "item": [
+        {
+          "name": "1. Duplicate Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Reuse an existing email - should be rejected (EMP-002).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"EMP-DUP-1\",\n  \"name\": \"Duplicate User\",\n  \"email\": \"{{existingEmail}}\",\n  \"departmentId\": 10,\n  \"supervisorId\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409 (duplicate)', () => pm.response.to.have.status(409));",
+                  "const j = pm.response.json();",
+                  "pm.test('Message mentions the email already exists', () => {",
+                  "  pm.expect(JSON.stringify(j).toLowerCase()).to.match(/email|exist|unique/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Missing Employee ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Create an employee without the mandatory Employee ID - should be rejected (400).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"No Code User\",\n  \"email\": \"no.code@workforcepro.com\",\n  \"departmentId\": 10,\n  \"supervisorId\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "const j = pm.response.json();",
+                  "pm.test('Message mentions the missing field', () => {",
+                  "  pm.expect(JSON.stringify(j).toLowerCase()).to.match(/employeeid|required|mandatory/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Invalid Training ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{supervisorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "assign"
+              ]
+            },
+            "description": "Assign a training module that does not exist - should be rejected (404/422).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{createdEmployeeId}}\",\n  \"trainingModuleId\": 999999,\n  \"dueDate\": \"2026-07-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404 or 422', () => pm.expect([404,422]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('Message mentions training/module not found', () => {",
+                  "  pm.expect(JSON.stringify(j).toLowerCase()).to.match(/training|module|not found|invalid/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Approve Non-Completed Training",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{supervisorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "approve"
+              ]
+            },
+            "description": "Approve a training that was never completed - should be rejected. Uses a seeded 'Assigned' assignment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{assignedOnlyAssignmentId}}\",\n  \"approverId\": 500,\n  \"decision\": \"Approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A training still in 'Assigned' status cannot be approved.",
+                  "pm.test('Status code is 409 or 422', () => pm.expect([409,422]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('Message mentions it is not completed', () => {",
+                  "  pm.expect(JSON.stringify(j).toLowerCase()).to.match(/not.*complete|invalid.*state|pending/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Complete Unassigned Training",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings",
+                "complete"
+              ]
+            },
+            "description": "Employee tries to complete a training not assigned to them - should be rejected (OJT-004). Uses a seeded foreign assignment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{foreignAssignmentId}}\",\n  \"completionDate\": \"2026-06-23\",\n  \"employeeNotes\": \"Not mine.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Business rule (OJT-004): cannot complete a training not assigned to you.",
+                  "pm.test('Status code is 403 or 422', () => pm.expect([403,422]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('Message mentions not assigned / forbidden', () => {",
+                  "  pm.expect(JSON.stringify(j).toLowerCase()).to.match(/not assigned|forbidden|permission|invalid/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://staging.workforcepro.example",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "<set-admin-jwt>",
+      "type": "string"
+    },
+    {
+      "key": "supervisorToken",
+      "value": "<set-supervisor-jwt>",
+      "type": "string"
+    },
+    {
+      "key": "employeeToken",
+      "value": "<set-employee-jwt>",
+      "type": "string"
+    },
+    {
+      "key": "existingEmail",
+      "value": "ravi.sharma@workforcepro.com",
+      "type": "string"
+    },
+    {
+      "key": "createdEmployeeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "assignmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "assignedOnlyAssignmentId",
+      "value": "9100",
+      "type": "string"
+    },
+    {
+      "key": "foreignAssignmentId",
+      "value": "9300",
+      "type": "string"
+    },
+    {
+      "key": "newEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newEmployeeCode",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

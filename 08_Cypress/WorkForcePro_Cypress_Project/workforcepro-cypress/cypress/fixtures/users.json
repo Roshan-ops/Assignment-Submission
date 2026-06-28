@@ -1,0 +1,5 @@
+{
+  "admin":      { "email": "admin@workforcepro.com",      "password": "Admin@123" },
+  "supervisor": { "email": "anita.rao@workforcepro.com",  "password": "Super@123" },
+  "employee":   { "email": "ravi.sharma@workforcepro.com","password": "Emp@123" }
+}
